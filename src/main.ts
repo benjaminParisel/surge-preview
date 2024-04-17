@@ -40,8 +40,9 @@ async function main() {
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
   } else {
+    core.debug(`#### Action from fork with sha ${gitCommitSha}`);
     const query = {
-      q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
+      q: `repo:${github.context.repo} is:pr sha:${gitCommitSha}`,
       per_page: 1,
     };
     const result = await octokit.rest.search.issuesAndPullRequests(query);

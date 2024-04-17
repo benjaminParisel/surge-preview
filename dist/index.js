@@ -230,8 +230,9 @@ function main() {
             prNumber = payload.number;
         }
         else {
+            core.debug(`#### Action from fork with sha ${gitCommitSha}`);
             const query = {
-                q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
+                q: `repo:${github.context.repo} is:pr sha:${gitCommitSha}`,
                 per_page: 1,
             };
             const result = yield octokit.rest.search.issuesAndPullRequests(query);
