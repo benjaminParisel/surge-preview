@@ -197,8 +197,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
 const exec_1 = __nccwpck_require__(1514);
+const github = __importStar(__nccwpck_require__(5438));
 const commentToPullRequest_1 = __nccwpck_require__(1393);
 const helpers_1 = __nccwpck_require__(5008);
 let failOnErrorGlobal = false;
@@ -209,6 +209,7 @@ function main() {
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
+        const prNumberInput = core.getInput('pr_number');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
@@ -226,23 +227,30 @@ function main() {
         core.debug(JSON.stringify(github.context.repo, null, 2));
         core.debug(`payload.pull_request?.head: ${(_e = payload.pull_request) === null || _e === void 0 ? void 0 : _e.head}`);
         const fromForkedRepo = (_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head.repo.fork;
-        if (payload.number && payload.pull_request) {
-            prNumber = payload.number;
+        if (prNumberInput) {
+            core.debug(`Setting prNumber ${prNumberInput} from action input`);
+            //TODO: Check if prNumberInput is not an number
+            prNumber = +prNumberInput;
         }
         else {
-            const result = yield octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                commit_sha: gitCommitSha,
-            });
-            const pr = result.data.length > 0 && result.data[0];
-            core.debug('listPullRequestsAssociatedWithCommit');
-            core.debug(JSON.stringify(pr, null, 2));
-            prNumber = pr ? pr.number : undefined;
-        }
-        if (!prNumber) {
-            core.info(`😢 No related PR found, skip it.`);
-            return;
+            if (payload.number && payload.pull_request) {
+                prNumber = payload.number;
+            }
+            else {
+                const result = yield octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    commit_sha: gitCommitSha,
+                });
+                const pr = result.data.length > 0 && result.data[0];
+                core.debug('listPullRequestsAssociatedWithCommit');
+                core.debug(JSON.stringify(pr, null, 2));
+                prNumber = pr ? pr.number : undefined;
+            }
+            if (!prNumber) {
+                core.info(`😢 No related PR found, skip it.`);
+                return;
+            }
         }
         core.info(`Find PR number: ${prNumber}`);
         const commentIfNotForkedRepo = (message) => {

@@ -9,6 +9,9 @@ inputs:
     description: 'github token'
     required: true
     default: ${{ github.token }}
+  pr_number:
+    description: 'Pr number where come from artifact'
+    required: false
   build:
     description: 'build scripts'
     default: |

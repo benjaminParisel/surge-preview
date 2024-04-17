@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import { exec } from '@actions/exec';
+import * as github from '@actions/github';
 import { comment } from './commentToPullRequest';
 import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
 
@@ -12,6 +12,7 @@ async function main() {
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
+  const prNumberInput = core.getInput('pr_number');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
@@ -37,23 +38,29 @@ async function main() {
   core.debug(`payload.pull_request?.head: ${payload.pull_request?.head}`);
   const fromForkedRepo = payload.pull_request?.head.repo.fork;
 
-  if (payload.number && payload.pull_request) {
-    prNumber = payload.number;
+  if (prNumberInput) {
+    core.debug(`Setting prNumber ${prNumberInput} from action input`);
+    //TODO: Check if prNumberInput is not an number
+    prNumber = +prNumberInput;
   } else {
-    const result =
-      await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        commit_sha: gitCommitSha,
-      });
-    const pr = result.data.length > 0 && result.data[0];
-    core.debug('listPullRequestsAssociatedWithCommit');
-    core.debug(JSON.stringify(pr, null, 2));
-    prNumber = pr ? pr.number : undefined;
-  }
-  if (!prNumber) {
-    core.info(`😢 No related PR found, skip it.`);
-    return;
+    if (payload.number && payload.pull_request) {
+      prNumber = payload.number;
+    } else {
+      const result =
+        await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          commit_sha: gitCommitSha,
+        });
+      const pr = result.data.length > 0 && result.data[0];
+      core.debug('listPullRequestsAssociatedWithCommit');
+      core.debug(JSON.stringify(pr, null, 2));
+      prNumber = pr ? pr.number : undefined;
+    }
+    if (!prNumber) {
+      core.info(`😢 No related PR found, skip it.`);
+      return;
+    }
   }
   core.info(`Find PR number: ${prNumber}`);
 
