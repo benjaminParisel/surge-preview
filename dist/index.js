@@ -235,11 +235,16 @@ function main() {
                 q: `repo:${github.context.repo} is:pr sha:${gitCommitSha}`,
                 per_page: 1,
             };
-            const result = yield octokit.rest.search.issuesAndPullRequests(query);
-            const pr = result.data.items.length > 0 && result.data.items[0];
-            core.debug('list issuesAndPullRequests');
-            core.debug(JSON.stringify(pr, null, 2));
-            prNumber = pr ? pr.number : undefined;
+            try {
+                const result = yield octokit.rest.search.issuesAndPullRequests(query);
+                core.debug('list issuesAndPullRequests');
+                const pr = result.data.items.length > 0 && result.data.items[0];
+                core.debug(JSON.stringify(pr, null, 2));
+                prNumber = pr ? pr.number : undefined;
+            }
+            catch (e) {
+                core.info(`😢 It's broken !`);
+            }
         }
         if (!prNumber) {
             core.info(`😢 No related PR found, skip it.`);
