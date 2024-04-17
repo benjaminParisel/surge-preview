@@ -231,8 +231,10 @@ function main() {
         }
         else {
             core.debug(`#### Action from fork with sha ${gitCommitSha}`);
+            core.debug(`#### github.context.repo.repo ${github.context.repo.repo}`);
+            core.debug(`#### github.context.repo ${github.context.repo}`);
             const query = {
-                q: `repo:${github.context.repo} is:pr sha:${gitCommitSha}`,
+                q: `repo:${github.context.repo.owner}/${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
                 per_page: 1,
             };
             try {
@@ -243,6 +245,7 @@ function main() {
                 prNumber = pr ? pr.number : undefined;
             }
             catch (e) {
+                core.debug(`exception ${e}`);
                 core.info(`😢 It's broken !`);
             }
         }
