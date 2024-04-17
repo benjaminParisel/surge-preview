@@ -40,15 +40,10 @@ async function main() {
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
   } else {
-    core.debug(`#### Action from fork with sha ${gitCommitSha}`);
-    core.debug(`#### github.context.repo.repo ${github.context.repo.repo}`);
-    core.debug(`#### github.context.repo ${github.context.repo}`);
-
     const query = {
       q: `repo:${github.context.repo.owner}/${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
       per_page: 1,
     };
-
     try {
       const result = await octokit.rest.search.issuesAndPullRequests(query);
       core.debug('list issuesAndPullRequests');
@@ -56,8 +51,9 @@ async function main() {
       core.debug(JSON.stringify(pr, null, 2));
       prNumber = pr ? pr.number : undefined;
     } catch (e) {
-      core.debug(`exception ${e}`);
-      core.info(`😢 It's broken !`);
+      //TODO: Set the build in error if errors occurs
+      core.debug(`issuesAndPullRequests search error: ${e}`);
+      return;
     }
   }
   if (!prNumber) {
