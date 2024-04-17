@@ -209,7 +209,6 @@ function main() {
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
-        const prNumberInput = core.getInput('pr_number');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
@@ -227,30 +226,23 @@ function main() {
         core.debug(JSON.stringify(github.context.repo, null, 2));
         core.debug(`payload.pull_request?.head: ${(_e = payload.pull_request) === null || _e === void 0 ? void 0 : _e.head}`);
         const fromForkedRepo = (_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head.repo.fork;
-        if (prNumberInput) {
-            core.debug(`Setting prNumber ${prNumberInput} from action input`);
-            //TODO: Check if prNumberInput is not an number
-            prNumber = +prNumberInput;
+        if (payload.number && payload.pull_request) {
+            prNumber = payload.number;
         }
         else {
-            if (payload.number && payload.pull_request) {
-                prNumber = payload.number;
-            }
-            else {
-                const query = {
-                    q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
-                    per_page: 1,
-                };
-                const result = yield octokit.rest.search.issuesAndPullRequests(query);
-                const pr = result.data.items.length > 0 && result.data.items[0];
-                core.debug('list issuesAndPullRequests');
-                core.debug(JSON.stringify(pr, null, 2));
-                prNumber = pr ? pr.number : undefined;
-            }
-            if (!prNumber) {
-                core.info(`😢 No related PR found, skip it.`);
-                return;
-            }
+            const query = {
+                q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
+                per_page: 1,
+            };
+            const result = yield octokit.rest.search.issuesAndPullRequests(query);
+            const pr = result.data.items.length > 0 && result.data.items[0];
+            core.debug('list issuesAndPullRequests');
+            core.debug(JSON.stringify(pr, null, 2));
+            prNumber = pr ? pr.number : undefined;
+        }
+        if (!prNumber) {
+            core.info(`😢 No related PR found, skip it.`);
+            return;
         }
         core.info(`Find PR number: ${prNumber}`);
         const commentIfNotForkedRepo = (message) => {

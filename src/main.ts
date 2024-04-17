@@ -12,7 +12,6 @@ async function main() {
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
-  const prNumberInput = core.getInput('pr_number');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
@@ -38,29 +37,24 @@ async function main() {
   core.debug(`payload.pull_request?.head: ${payload.pull_request?.head}`);
   const fromForkedRepo = payload.pull_request?.head.repo.fork;
 
-  if (prNumberInput) {
-    core.debug(`Setting prNumber ${prNumberInput} from action input`);
-    //TODO: Check if prNumberInput is not an number
-    prNumber = +prNumberInput;
+  if (payload.number && payload.pull_request) {
+    prNumber = payload.number;
   } else {
-    if (payload.number && payload.pull_request) {
-      prNumber = payload.number;
-    } else {
-      const query = {
-        q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
-        per_page: 1,
-      };
-      const result = await octokit.rest.search.issuesAndPullRequests(query);
-      const pr = result.data.items.length > 0 && result.data.items[0];
-      core.debug('list issuesAndPullRequests');
-      core.debug(JSON.stringify(pr, null, 2));
-      prNumber = pr ? pr.number : undefined;
-    }
-    if (!prNumber) {
-      core.info(`😢 No related PR found, skip it.`);
-      return;
-    }
+    const query = {
+      q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
+      per_page: 1,
+    };
+    const result = await octokit.rest.search.issuesAndPullRequests(query);
+    const pr = result.data.items.length > 0 && result.data.items[0];
+    core.debug('list issuesAndPullRequests');
+    core.debug(JSON.stringify(pr, null, 2));
+    prNumber = pr ? pr.number : undefined;
   }
+  if (!prNumber) {
+    core.info(`😢 No related PR found, skip it.`);
+    return;
+  }
+
   core.info(`Find PR number: ${prNumber}`);
 
   const commentIfNotForkedRepo = (message: string) => {
