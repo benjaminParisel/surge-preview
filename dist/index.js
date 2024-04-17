@@ -237,13 +237,13 @@ function main() {
                 prNumber = payload.number;
             }
             else {
-                const result = yield octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-                    owner: github.context.repo.owner,
-                    repo: github.context.repo.repo,
-                    commit_sha: gitCommitSha,
-                });
-                const pr = result.data.length > 0 && result.data[0];
-                core.debug('listPullRequestsAssociatedWithCommit');
+                const query = {
+                    q: `repo:${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
+                    per_page: 1,
+                };
+                const result = yield octokit.rest.search.issuesAndPullRequests(query);
+                const pr = result.data.items.length > 0 && result.data.items[0];
+                core.debug('list issuesAndPullRequests');
                 core.debug(JSON.stringify(pr, null, 2));
                 prNumber = pr ? pr.number : undefined;
             }
