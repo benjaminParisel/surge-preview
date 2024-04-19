@@ -38,22 +38,24 @@ async function main() {
   const fromForkedRepo = payload.pull_request?.head.repo.fork;
 
   if (payload.number && payload.pull_request) {
+    core.debug('prNumber retrieved from pull_request');
     prNumber = payload.number;
   } else {
+    core.debug('Not a pull_request, so doing a API search');
+    // Inspired by https://github.com/orgs/community/discussions/25220#discussioncomment-8697399
     const query = {
       q: `repo:${github.context.repo.owner}/${github.context.repo.repo} is:pr sha:${gitCommitSha}`,
       per_page: 1,
     };
     try {
       const result = await octokit.rest.search.issuesAndPullRequests(query);
-      core.debug('list issuesAndPullRequests');
       const pr = result.data.items.length > 0 && result.data.items[0];
-      core.debug(JSON.stringify(pr, null, 2));
+      core.debug(`Found related pull_request: ${JSON.stringify(pr, null, 2)}`);
       prNumber = pr ? pr.number : undefined;
     } catch (e) {
-      //TODO: Set the build in error if errors occurs
-      core.debug(`issuesAndPullRequests search error: ${e}`);
-      return;
+      // As mentioned in https://github.com/orgs/community/discussions/25220#discussioncomment-8971083
+      // from time to time, you may get rate limit errors given search API seems to use many calls internally.
+      core.warning(`Unable to get the PR number with API search: ${e}`);
     }
   }
   if (!prNumber) {
