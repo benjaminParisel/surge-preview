@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
-import { exec } from '@actions/exec';
 import * as github from '@actions/github';
+import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
 
